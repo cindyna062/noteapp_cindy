@@ -40,12 +40,17 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      # 1. Build selesai (hasilnya masih app-release.apk)
       - name: Build APK Release
         run: flutter build apk --release
 
-      # Upload APK agar bisa didownload dari GitHub
+      # 2. Rename file (Ganti nama dari default ke nama keinginan Anda)
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-noteapp.apk
+
+      # 3. Upload file yang SUDAH di-rename
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk-note
+          name: release-apk
           path: build/app/outputs/flutter-apk/app-noteapp.apk

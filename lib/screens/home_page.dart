@@ -10,6 +10,7 @@ import '../models/note.dart';
 import '../widgets/note_card.dart';
 import '../widgets/empty_state.dart';
 import 'add_edit_note_page.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,11 +22,20 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _searchController = TextEditingController();
   bool _isSearching = false;
+  String _version = '';
 
   @override
   void initState() {
     super.initState();
     context.read<NotesBloc>().add(NotesLoadRequested());
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = packageInfo.version;
+    });
   }
 
   @override
@@ -378,8 +388,19 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
 
-                        // Bottom padding
-                        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                        // Bottom padding and version
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 80, top: 16),
+                            child: Center(
+                              child: Text(
+                                'Version $_version',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   );

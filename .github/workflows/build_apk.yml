@@ -1,9 +1,15 @@
 name: Build Flutter APK
 
 on:
+  # 1. UBAH BAGIAN INI: Tambahkan trigger saat ada Tag (v...)
   push:
-    branches: [ "main" ] # Ganti dengan nama branch utama Anda (master/main)
-  workflow_dispatch: # Supaya bisa di-run manual
+    tags:
+      - 'v*' # Contoh: v1.0, v1.0.1, dst.
+  workflow_dispatch:
+
+# 2. TAMBAHKAN INI: Izin supaya script bisa menulis di menu Releases
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -16,15 +22,13 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' # Sesuaikan dengan versi Java yang kompatibel dengan versi Flutter Anda
+          java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # flutter-version: '3.19.0' # Opsional: definisikan versi spesifik jika perlu
 
-      # --- BAGIAN KRITIS: DECODE RAHASIA ---
       - name: Decode Keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -35,22 +39,25 @@ jobs:
           echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=upload-keystore.jks" >> android/key.properties
-      # -------------------------------------
 
       - name: Get Dependencies
         run: flutter pub get
 
-      # 1. Build selesai (hasilnya masih app-release.apk)
       - name: Build APK Release
         run: flutter build apk --release
 
-      # 2. Rename file (Ganti nama dari default ke nama keinginan Anda)
+      # Rename file agar sesuai keinginan Anda
       - name: Rename APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-noteapp.apk
 
-      # 3. Upload file yang SUDAH di-rename
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      # --- BAGIAN BARU: PUBLISH KE RELEASES ---
+      - name: Release APK
+        uses: ncipollo/release-action@v1
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-noteapp.apk
+          artifacts: "build/app/outputs/flutter-apk/app-noteapp.apk"
+          token: ${{ secrets.GITHUB_TOKEN }} # Ini otomatis ada, tidak perlu disetting manual
+          tag: ${{ github.ref_name }} # Mengambil nama tag (misal v1.0)
+          name: "Release ${{ github.ref_name }}"
+          body: "Ini adalah rilis otomatis dari GitHub Actions."
+          generateReleaseNotes: true
+      # ----------------------------------------
